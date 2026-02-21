@@ -713,7 +713,7 @@ export default function StudyForge() {
   useEffect(()=>{
     const load = (key, setter, def) => { try { const v=localStorage.getItem(key); if(v) setter(JSON.parse(v)); else if(def!==undefined) setter(def); } catch{} };
     const stored = localStorage.getItem("sf_users");
-    const SEED = { "zakra@ucr.ac.cr":{ name:"Zakra529", email:"zakra@ucr.ac.cr", password:"zakraMedina1357", career:"Electromecánica Industrial", year:"2", courses:"", isAdmin:false, points:0, streak:0, badges:[], joinDate:new Date().toISOString(), bio:"", avatarColor:"#00d4ff", lastActive:new Date().toISOString() }};
+    const SEED = { "zakra@ucr.ac.cr":{ name:"Zakra529", email:"zakra@ucr.ac.cr", password:" ", career:"Electromecánica Industrial", year:"2", courses:"", isAdmin:false, points:0, streak:0, badges:[], joinDate:new Date().toISOString(), bio:"", avatarColor:"#00d4ff", lastActive:new Date().toISOString() }};
     const existing = stored ? JSON.parse(stored) : {};
     const merged = { ...SEED, ...existing };
     setUsers(merged);
@@ -858,12 +858,12 @@ export default function StudyForge() {
     const check = isInCheck(nb,next);
     const hasLegal = hasAnyLegal(nb,next,mv,nc);
     if(!hasLegal){
-      if(check){ setChessMsg(next==="w"?"¡Jaque mate! Negras ganan ♛":"¡Jaque mate! Blancas ganan ♔"); }
+      if(check){ setChessMsg(next==="w"?"Jaque mate! Negras ganan ♛":"Jaque mate! Blancas ganan ♔"); }
       else { setChessMsg("¡Ahogado! Empate"); }
     } else if(check){
-      setChessMsg(`¡Jaque al ${next==="w"?"Rey blanco":"Rey negro"}!`);
+      setChessMsg(`¡Jaque al ${next==="w" ? "Rey blanco" : "Rey negro"}!`);
     } else {
-      setChessMsg(`Turno: ${next==="w"?"Blancas ♔":"Negras ♚"}`);
+      setChessMsg(`Turno: ${next==="w" ? "Blancas" : "Negras"}`);
     }
     setChalProgress(cp=>({...cp,chess:cp.chess+0.5}));
   };
@@ -888,6 +888,33 @@ export default function StudyForge() {
     setTimeout(()=>{ if(triviaIdx+1<filteredQ.length){ setTriviaIdx(i=>i+1); setTriviaAns(null); } else { setTriviaOn(false); toast(`Trivia: ${triviaScore+(ok?1:0)}/${filteredQ.length} 🎯`); }},1200);
   };
 
+  // Safe math evaluator (no new Function needed)
+  const safeEval = (expr, x) => {
+    const e = expr
+      .replace(/\bx\b/g, String(x))
+      .replace(/\bMath\./g, "")
+      .replace(/\bpi\b/gi, String(Math.PI))
+      .replace(/\bPI\b/g, String(Math.PI))
+      .replace(/\^/g, "**");
+    const allowed = /^[\d\s\+\-\*\/\(\)\.\,a-z\_]+$/i;
+    if(!allowed.test(e)) throw new Error("Invalid");
+    const fns = { sin:Math.sin, cos:Math.cos, tan:Math.tan, asin:Math.asin, acos:Math.acos, atan:Math.atan, sqrt:Math.sqrt, abs:Math.abs, log:Math.log, log10:Math.log10, exp:Math.exp, ceil:Math.ceil, floor:Math.floor, round:Math.round, pow:Math.pow };
+    const body = e.replace(/\b(sin|cos|tan|asin|acos|atan|sqrt|abs|log|log10|exp|ceil|floor|round|pow)\b/g, m => `fns.${m}`);
+    return eval(body);
+  };
+
+  const calcSafeEval = (expr) => {
+    const e = expr
+      .replace(/π/g, String(Math.PI))
+      .replace(/\be\b/g, String(Math.E))
+      .replace(/\^/g, "**")
+      .replace(/\bln\(/g, "log(")
+      .replace(/\blog\(/g, "log10(");
+    const fns = { sin:Math.sin, cos:Math.cos, tan:Math.tan, asin:Math.asin, acos:Math.acos, atan:Math.atan, sqrt:Math.sqrt, abs:Math.abs, log:Math.log, log10:Math.log10, exp:Math.exp, ceil:Math.ceil, floor:Math.floor, round:Math.round, pow:Math.pow, PI:Math.PI, E:Math.E };
+    const body = e.replace(/\b(sin|cos|tan|asin|acos|atan|sqrt|abs|log|log10|exp|ceil|floor|round|pow)\b/g, m => `fns.${m}`).replace(/\bPI\b/g,"fns.PI").replace(/\bE\b/g,"fns.E");
+    return eval(body);
+  };
+
   // ── GRAPH ──
   const drawGraph = () => {
     const canvas = canvasRef.current; if(!canvas) return;
@@ -908,8 +935,7 @@ export default function StudyForge() {
       for(let px=0;px<W;px++){
         const x=(px-W/2)/sc;
         try{
-          // eslint-disable-next-line no-new-func
-          const y=new Function("x",`with(Math){return ${fn}}`)(x);
+          const y=safeEval(fn,x);
           const py=H/2-y*sc;
           if(!isFinite(y)||Math.abs(py)>H*3){started=false;continue;}
           if(!started){ctx.moveTo(px,py);started=true;}else ctx.lineTo(px,py);
@@ -942,7 +968,7 @@ export default function StudyForge() {
     const ng = shipEnemyGrid.map(row=>[...row]);
     const hit = ng[r][c]===1; ng[r][c]=hit?2:3;
     setShipEnemyGrid(ng);
-    setShipMsg(hit?"¡Impacto! 💥":"Agua 💧");
+    setShipMsg(hit ? "Impacto! 💥" : "Agua 💧");
     if(ng.flat().filter(v=>v===1).length===0){ setShipMsg("¡Ganaste! 🏆"); setShipPhase("done"); }
   };
 
@@ -1001,7 +1027,7 @@ export default function StudyForge() {
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           {["login","register"].map(m=>(
             <button key={m} onClick={()=>setAuthMode(m)} style={{...btn(authMode===m?t.gold:t.s2,authMode===m?"#000":t.muted),flex:1,padding:10}}>
-              {m==="login"?"Iniciar Sesión":"Registrarse"}
+              {m==="login" ? "Iniciar Sesion" : "Registrarse"}
             </button>
           ))}
         </div>
@@ -1061,7 +1087,7 @@ export default function StudyForge() {
             {upcoming.slice(0,3).map(ev=>(
               <div key={ev.id} style={{marginBottom:6}}>
                 <div style={{fontSize:13}}>{ev.title}</div>
-                <span style={tag(daysUntil(ev.date)<=3?t.red:t.blue)}>{daysUntil(ev.date)===0?"¡Hoy!":daysUntil(ev.date)+" días"}</span>
+                <span style={tag(daysUntil(ev.date)<=3?t.red:t.blue)}>{daysUntil(ev.date)===0 ? "Hoy!":daysUntil(ev.date)+" días"}</span>
               </div>
             ))}
             {!upcoming.length&&<div style={{color:t.muted,fontSize:13}}>Sin eventos próximos</div>}
@@ -1584,134 +1610,30 @@ export default function StudyForge() {
           ))}
         </div>
 
-       {calcMode === "scientific" && (
-  <div style={card}>
-    <input
-      style={{
-        ...inp,
-        fontSize: 20,
-        marginBottom: 8,
-        textAlign: "right",
-        width: "100%",
-      }}
-      value={calcIn}
-      onChange={e => setCalcIn(e.target.value)}
-      onKeyDown={e => {
-        if (e.key === "Enter") {
-          try {
-            const expr = calcIn
-              .replace(/\^/g, "**")
-              .replace(/π/g, "PI")
-              .replace(/log\(/g, "log10(")
-              .replace(/ln\(/g, "log(");
-
-            const r = new Function(`with(Math){ return ${expr} }`)();
-
-            setCalcOut(String(r));
-            setCalcHist(p => [`${calcIn} = ${r}`, ...p.slice(0, 9)]);
-          } catch {
-            setCalcOut("Error");
-          }
-        }
-      }}
-      placeholder="Ingresa una expresión..."
-    />
-
-    {calcOut && (
-      <div
-        style={{
-          textAlign: "right",
-          fontSize: 24,
-          color: t.gold,
-          marginBottom: 12,
-          fontFamily: "Orbitron",
-        }}
-      >
-        = {calcOut}
-      </div>
-    )}
-
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(5,1fr)",
-        gap: 5,
-      }}
-    >
-      {[
-        "7","8","9","/","√(",
-        "4","5","6","*","^",
-        "1","2","3","-","π",
-        "0",".","=","+","e",
-        "sin(","cos(","tan(","log(","ln(",
-        "(",")","%","C","⌫"
-      ].map(b => (
-        <button
-          key={b}
-          onClick={() => {
-            if (b === "=") {
-              try {
-                const expr = calcIn
-                  .replace(/\^/g, "**")
-                  .replace(/π/g, "PI")
-                  .replace(/log\(/g, "log10(")
-                  .replace(/ln\(/g, "log(");
-
-                const r = new Function(`with(Math){ return ${expr} }`)();
-
-                setCalcOut(String(r));
-                setCalcHist(p => [`${calcIn} = ${r}`, ...p.slice(0, 9)]);
-              } catch {
-                setCalcOut("Error");
-              }
-            } else if (b === "C") {
-              setCalcIn("");
-              setCalcOut("");
-            } else if (b === "⌫") {
-              setCalcIn(p => p.slice(0, -1));
-            } else if (b === "√(") {
-              setCalcIn(p => p + "sqrt(");
-            } else {
-              setCalcIn(p => p + b);
-            }
-          }}
-          style={{
-            ...btn(
-              b === "=" ? t.gold : b === "C" ? t.red : t.s3,
-              b === "=" ? "#000" : b === "C" ? "#fff" : t.text
-            ),
-            padding: "10px 2px",
-            fontSize: 13,
-          }}
-        >
-          {b === "√(" ? "√" : b}
-        </button>
-      ))}
-    </div>
-
-    {calcHist.length > 0 && (
-      <div style={{ marginTop: 12 }}>
-        <div style={{ color: t.muted, fontSize: 11, marginBottom: 4 }}>
-          Historial
-        </div>
-        {calcHist.map((h, i) => (
-          <div
-            key={i}
-            onClick={() => setCalcIn(h.split(" = ")[0])}
-            style={{
-              color: t.muted,
-              fontSize: 12,
-              cursor: "pointer",
-              padding: "2px 0",
-            }}
-          >
-            {h}
+        {calcMode==="scientific"&&(
+          <div style={card}>
+            <input style={{...inp,fontSize:20,marginBottom:8,textAlign:"right",width:"100%"}} value={calcIn} onChange={e=>setCalcIn(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter"){try{const r=calcSafeEval(calcIn);setCalcOut(String(r));setCalcHist(p=>[`${calcIn} = ${r}`,...p.slice(0,9)]);}catch{setCalcOut("Error");}} }} placeholder="Ingresa una expresión..."/>
+            {calcOut&&<div style={{textAlign:"right",fontSize:24,color:t.gold,marginBottom:12,fontFamily:"Orbitron"}}>= {calcOut}</div>}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5}}>
+              {["7","8","9","/","√(","4","5","6","*","^","1","2","3","-","π","0",".","=","+","e","sin(","cos(","tan(","log(","ln(","(",")","%","C","⌫"].map(b=>(
+                <button key={b} onClick={()=>{
+                  if(b==="="){try{const r=calcSafeEval(calcIn);setCalcOut(String(r));setCalcHist(p=>[`${calcIn} = ${r}`,...p.slice(0,9)]);}catch{setCalcOut("Error");}}
+                  else if(b==="C"){setCalcIn("");setCalcOut("");}
+                  else if(b==="⌫") setCalcIn(p=>p.slice(0,-1));
+                  else if(b==="√(") setCalcIn(p=>p+"sqrt(");
+                  else setCalcIn(p=>p+b);
+                }} style={{...btn(b==="="?t.gold:b==="C"?t.red:t.s3,b==="="?"#000":b==="C"?"#fff":t.text),padding:"10px 2px",fontSize:13}}>
+                  {b==="√("?"√":b}
+                </button>
+              ))}
+            </div>
+            {calcHist.length>0&&<div style={{marginTop:12}}>
+              <div style={{color:t.muted,fontSize:11,marginBottom:4}}>Historial</div>
+              {calcHist.map((h,i)=><div key={i} onClick={()=>setCalcIn(h.split(" = ")[0])} style={{color:t.muted,fontSize:12,cursor:"pointer",padding:"2px 0"}}>{h}</div>)}
+            </div>}
           </div>
-        ))}
-      </div>
-    )}
-  </div>
-)}
+        )}
+
         {calcMode==="graph"&&(
           <div style={card}>
             <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
@@ -2087,7 +2009,7 @@ export default function StudyForge() {
             ):(
               <div>
                 <div style={{color:hangStatus==="won"?t.ok:t.red,fontSize:22,fontWeight:700,marginBottom:12}}>
-                  {hangStatus==="won"?"¡Ganaste! 🎉":`¡Perdiste! La palabra era: "${hangWord}"`}
+                  {hangStatus==="won" ? "Ganaste! 🎉":`¡Perdiste! La palabra era: "${hangWord}"`}
                 </div>
                 <button onClick={()=>{setHangWord(WORD_LIST[Math.floor(Math.random()*WORD_LIST.length)]);setHangGuesses([]);setHangStatus("playing");}} style={btn()}>Nueva palabra</button>
               </div>
@@ -2121,7 +2043,7 @@ export default function StudyForge() {
             ):(
               <div>
                 <div style={{color:wordleStatus==="won"?t.ok:t.red,fontSize:22,fontWeight:700,marginBottom:12}}>
-                  {wordleStatus==="won"?"¡Lo adivinaste! 🎉":`La palabra era: "${wordleWord}"`}
+                  {wordleStatus==="won" ? "Adivinaste! 🎉":`La palabra era: "${wordleWord}"`}
                 </div>
               </div>
             )}
@@ -2511,7 +2433,7 @@ export default function StudyForge() {
           {upcoming.map(ev=>(
             <div key={ev.id} style={{background:t.s2,border:`1px solid ${daysUntil(ev.date)<=3?t.red:t.border}`,borderRadius:6,padding:8,marginBottom:6,fontSize:11}}>
               <div style={{fontWeight:700,marginBottom:2}}>{ev.title}</div>
-              <div style={{color:daysUntil(ev.date)<=3?t.red:t.muted}}>{daysUntil(ev.date)===0?"¡Hoy!":daysUntil(ev.date)<0?"Vencido":`${daysUntil(ev.date)}d`}</div>
+              <div style={{color:daysUntil(ev.date)<=3?t.red:t.muted}}>{daysUntil(ev.date)===0 ? "Hoy!":daysUntil(ev.date)<0?"Vencido":`${daysUntil(ev.date)}d`}</div>
             </div>
           ))}
           {!upcoming.length&&<div style={{color:t.muted,fontSize:11}}>Sin eventos</div>}
